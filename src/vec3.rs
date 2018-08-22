@@ -48,11 +48,11 @@ impl Vec3 {
   }
 
   pub fn length(&self) -> f32 {
-    (self.e[0].powf(2.0) + self.e[1].powf(2.0) + self.e[2].powf(2.0)).sqrt()
+    (self.e[0].powi(2) + self.e[1].powi(2) + self.e[2].powi(2)).sqrt()
   }
 
   pub fn squared_length(&self) -> f32 {
-    self.e[0].powf(2.) + self.e[1].powf(2.) + self.e[2].powf(2.)
+    self.e[0].powi(2) + self.e[1].powi(2) + self.e[2].powi(2)
   }
 
   pub fn make_unit_vector(mut self) {
@@ -168,15 +168,15 @@ impl SubAssign for Vec3 {
 impl MulAssign<f32> for Vec3 {
   fn mul_assign(&mut self, t: f32) {
     self.e[0] *= t;
-    self.e[0] *= t;
-    self.e[0] *= t;
+    self.e[1] *= t;
+    self.e[2] *= t;
   }
 }
 
 impl DivAssign<f32> for Vec3 {
   fn div_assign(&mut self, t: f32) {
     self.e[0] /= t;
-    self.e[0] /= t;
-    self.e[0] /= t;
+    self.e[1] /= t;
+    self.e[2] /= t;
   }
 }

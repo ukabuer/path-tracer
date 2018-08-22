@@ -1,9 +1,9 @@
 use super::vec3::Vec3;
 
-#[derive(Debug)]
+#[allow(non_snake_case)]
 pub struct Ray {
-  A: Vec3,
-  B: Vec3,
+  pub A: Vec3,
+  pub B: Vec3,
 }
 
 impl Ray {

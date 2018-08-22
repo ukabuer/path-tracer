@@ -1,53 +1,98 @@
 extern crate image;
+extern crate rand;
 
-mod vec3;
-mod ray;
+mod camera;
 mod hitable;
+mod ray;
+mod vec3;
 
+use camera::Camera;
+use hitable::{Hitable, HitableList, Lambertian, Metal, Sphere};
 use image::RgbImage;
-use vec3::Vec3;
+use rand::random;
 use ray::Ray;
-use hitable::Hitable;
+use std::f32;
+use std::rc::Rc;
+use vec3::Vec3;
 
-fn color(r: &ray::Ray, world: &Hitable) -> vec3::Vec3 {
-    let mut rec = hitable::HitRecord::new();
-    if world.hit(r, 0.0, 9999.9, &mut rec) {
-        return Vec3::new(rec.normal.x() + 1.0, rec.normal.y() + 1.0, rec.normal.z() + 1.0) * 0.5;
-    } else {
-        let unit_direction = Vec3::unit_vector(r.direction());
-        let t = (unit_direction.y() + 1.0) * 0.5;
-        return Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t;
+fn random_in_unit_sphere() -> Vec3 {
+  let mut p;
+  loop {
+    p = Vec3::new(
+      2.0 * random::<f32>() - 1.0,
+      2.0 * random::<f32>() - 1.0,
+      2.0 * random::<f32>() - 1.0,
+    );
+    if p.dot(&p) < 1.0 {
+      return p;
     }
+  }
+}
+
+fn color(r: &Ray, world: &Hitable, depth: i32) -> Vec3 {
+  let result = world.hit(r, 0.001, f32::MAX);
+  match result {
+    None => {
+      let unit_direction = Vec3::unit_vector(r.direction());
+      let t = (unit_direction.y() + 1.0) * 0.5;
+      Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t
+    },
+    Some(rec) => {
+      if depth < 50 {
+        match rec.mat.scatter(r, &rec) {
+          None => Vec3::new(0.0, 0.0, 0.0),
+          Some((scattered, attenuation)) => attenuation * color(&scattered, world, depth + 1),
+        }
+      } else {
+        Vec3::new(0.0, 0.0, 0.0)
+      }
+    }
+  }
 }
 
 fn main() {
-    let nx = 200;
-    let ny = 100;
-    let mut img = RgbImage::new(nx, ny);
-    let lower_left_corner = Vec3::new(-2., -1., -1.);
-    let horizaontal = Vec3::new(4.0, 0.0, 0.0);
-    let vertical = Vec3::new(0.0, 2.0, 0.0);
-    let origin = Vec3::new(0., 0., 0.);
-    let mut list = hitable::HitableList::new();
-    list.push(Box::new(hitable::Sphere {
-        center: Vec3::new(0.0, 0.0, -1.0),
-        radius: 0.5,
-    }));
-    list.push(Box::new(hitable::Sphere {
-        center: Vec3::new(0.0, 0.-100.5, -1.0),
-        radius: 100.0,
-    }));
-    for j in 0..ny {
-        for i in 0..nx {
-            let u = i as f32 / nx as f32;
-            let v = j as f32 / ny as f32;
-            let r = Ray::new(origin, lower_left_corner + horizaontal * u + vertical * v);
-            let col = color(&r, &list);
-            let pixel = &mut img[(i, ny - j - 1)];
-            pixel[0] = (255.99 * col[0]) as u8;
-            pixel[1] = (255.99 * col[1]) as u8;
-            pixel[2] = (255.99 * col[2]) as u8;
-        }
+  let nx = 200;
+  let ny = 100;
+  let ns = 100;
+  let mut img = RgbImage::new(nx, ny);
+  let mut world = HitableList::new();
+  world.push(Box::new(Sphere::new(
+    Vec3::new(0.0, 0.0, -1.0),
+    0.5,
+    Rc::new(Lambertian::new(Vec3::new(0.8, 0.3, 0.3))),
+  )));
+  world.push(Box::new(Sphere::new(
+    Vec3::new(0.0, -100.5, -1.0),
+    100.0,
+    Rc::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.0))),
+  )));
+  world.push(Box::new(Sphere::new(
+    Vec3::new(1.0, 0.0, -1.0),
+    0.5,
+    Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2))),
+  )));
+  world.push(Box::new(Sphere::new(
+    Vec3::new(-1.0, 0.0, -1.0),
+    0.5,
+    Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8))),
+  )));
+  let cam = Camera::new();
+  for j in 0..ny {
+    for i in 0..nx {
+      let mut col = Vec3::new(0.0, 0.0, 0.0);
+      for _s in 0..ns {
+        let u = (i as f32 + random::<f32>()) / nx as f32;
+        let v = (j as f32 + random::<f32>()) / ny as f32;
+        let r = cam.get_ray(u, v);
+        col += color(&r, &world, 0);
+      }
+      col /= ns as f32;
+      col = Vec3::new(col[0].sqrt(), col[1].sqrt(), col[1].sqrt());
+      let pixel = &mut img[(i, ny - j - 1)];
+      pixel[0] = (255.99 * col[0]) as u8;
+      pixel[1] = (255.99 * col[1]) as u8;
+      pixel[2] = (255.99 * col[2]) as u8;
     }
-    img.save("output.png").expect("can not save image file");
+  }
+  img.save("output.png").expect("can not save image file");
 }

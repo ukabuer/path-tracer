@@ -31,37 +31,22 @@ impl Vec3 {
     self.e[1]
   }
 
-  pub fn z(&self) -> f32 {
-    self.e[2]
-  }
-
-  pub fn r(&self) -> f32 {
-    self.e[0]
-  }
-
-  pub fn g(&self) -> f32 {
-    self.e[1]
-  }
-
-  pub fn b(&self) -> f32 {
-    self.e[2]
-  }
-
   pub fn length(&self) -> f32 {
     (self.e[0].powi(2) + self.e[1].powi(2) + self.e[2].powi(2)).sqrt()
   }
 
-  pub fn squared_length(&self) -> f32 {
-    self.e[0].powi(2) + self.e[1].powi(2) + self.e[2].powi(2)
-  }
-
-  pub fn make_unit_vector(mut self) {
-    let length = self.length();
-    self /= length;
-  }
-
   pub fn dot(&self, other: &Vec3) -> f32 {
     self.e[0] * other.e[0] + self.e[1] * other.e[1] + self.e[2] * other.e[2]
+  }
+
+  pub fn cross(&self, other: Vec3) -> Vec3 {
+    Vec3 {
+      e: [
+        self[1] * other[2] - other[1] * self[2],
+        self[2] * other[0] - other[2] * self[0],
+        self[0] * other[1] - other[0] * self[1],
+      ],
+    }
   }
 }
 

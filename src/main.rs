@@ -3,31 +3,19 @@ extern crate rand;
 
 mod camera;
 mod hitable;
+mod material;
 mod ray;
 mod vec3;
 
 use camera::Camera;
-use hitable::{Hitable, HitableList, Lambertian, Metal, Sphere};
+use hitable::{Hitable, HitableList, Sphere};
 use image::RgbImage;
+use material::{Lambertian, Metal};
 use rand::random;
 use ray::Ray;
 use std::f32;
 use std::rc::Rc;
 use vec3::Vec3;
-
-fn random_in_unit_sphere() -> Vec3 {
-  let mut p;
-  loop {
-    p = Vec3::new(
-      2.0 * random::<f32>() - 1.0,
-      2.0 * random::<f32>() - 1.0,
-      2.0 * random::<f32>() - 1.0,
-    );
-    if p.dot(&p) < 1.0 {
-      return p;
-    }
-  }
-}
 
 fn color(r: &Ray, world: &Hitable, depth: i32) -> Vec3 {
   let result = world.hit(r, 0.001, f32::MAX);
@@ -36,7 +24,7 @@ fn color(r: &Ray, world: &Hitable, depth: i32) -> Vec3 {
       let unit_direction = Vec3::unit_vector(r.direction());
       let t = (unit_direction.y() + 1.0) * 0.5;
       Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t
-    },
+    }
     Some(rec) => {
       if depth < 50 {
         match rec.mat.scatter(r, &rec) {
@@ -87,7 +75,7 @@ fn main() {
         col += color(&r, &world, 0);
       }
       col /= ns as f32;
-      col = Vec3::new(col[0].sqrt(), col[1].sqrt(), col[1].sqrt());
+      col = Vec3::new(col[0].sqrt(), col[1].sqrt(), col[2].sqrt());
       let pixel = &mut img[(i, ny - j - 1)];
       pixel[0] = (255.99 * col[0]) as u8;
       pixel[1] = (255.99 * col[1]) as u8;
